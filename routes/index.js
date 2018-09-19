@@ -6,8 +6,8 @@ const {UserModel} = require('../db/models')
 const filter = {password: 0, __v: 0} // 查询时的过滤器(过滤掉password和__v属性)
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+router.get('/', function (req, res, next) {
+  res.render('index', {title: 'Express'});
 });
 
 
@@ -40,21 +40,21 @@ router.post('/register', function (req, res) {
   // 1. 获取请求参数数据
   const {username, password, type} = req.body
   // 2. 处理数据:
-    // 1). 根据username查询users集合得到user
+  // 1). 根据username查询users集合得到user
   UserModel.findOne({username}, function (error, userDoc) {
-    if(error) {
+    if (error) {
       console.log(error)
     } else {
-    // 2). 如果有, 用户已存在, 注册失败, 返回失败的响应
-      if(userDoc) {
+      // 2). 如果有, 用户已存在, 注册失败, 返回失败的响应
+      if (userDoc) {
         res.send({
           "code": 1,
           "msg": "此用户已存在"
         })
-    // 3). 如果没有, 可以注册, 保存用户信息, 成功后返回成功的响应
+        // 3). 如果没有, 可以注册, 保存用户信息, 成功后返回成功的响应
       } else {
-        new UserModel({username, password: md5(password), type}).save((error, userDoc)=> {
-          if(error) {
+        new UserModel({username, password: md5(password), type}).save((error, userDoc) => {
+          if (error) {
             console.log(error)
           } else {
             // 取出生成的_id
@@ -78,10 +78,6 @@ router.post('/register', function (req, res) {
     }
   })
 
-
-
-
-
   // 3. 返回响应: res.send()/json()
 })
 
@@ -92,9 +88,9 @@ router.post('/login', function (req, res) {
   const {username, password} = req.body
 
   // 根据username和password查询users集合
-  UserModel.findOne({username, password:md5(password)}, filter, function (error, userDoc) {
+  UserModel.findOne({username, password: md5(password)}, filter, function (error, userDoc) {
     // 如果没有, 说明登陆不能成功, 返回一个失败的响应
-    if(!userDoc) {
+    if (!userDoc) {
       res.send({
         "code": 1,
         "msg": "用户名或密码错误"
@@ -108,10 +104,28 @@ router.post('/login', function (req, res) {
       })
     }
   })
-
-
 })
 
+
+// 更新用户路由
+router.post('/update', function (req, res) {
+  // 得到请求cookie的userid
+  const userid = req.cookies.userid
+  if (!userid) {// 如果没有, 说明没有登陆, 直接返回提示
+    return res.send({code: 1, msg: '请先登陆'});
+  }
+
+  // 更新数据库中对应的数据
+  UserModel.findByIdAndUpdate({_id: userid}, req.body, function (err, user) {// user是数据库中原来的数据
+    const {_id, username, type} = user
+    // node端 ...不可用
+    // const data = {...req.body, _id, username, type}
+    // 合并用户信息
+    const data = Object.assign(req.body, {_id, username, type})
+    // assign(obj1, obj2, obj3,...) // 将多个指定的对象进行合并, 返回一个合并后的对象
+    res.send({code: 0, data})
+  })
+})
 
 
 module.exports = router;
