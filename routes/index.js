@@ -61,7 +61,7 @@ router.post('/register', function (req, res) {
             const _id = userDoc._id
 
             // 将用户的id保存到cookie中
-            res.cookie('userid', _id)
+            res.cookie('userid', _id, {maxAge: 1000*60*60*24*7}) //指定maxAge持久化cookie
 
             // 返回数据(不能带password)
             res.send({
@@ -97,7 +97,7 @@ router.post('/login', function (req, res) {
       })
     } else {
       // 如果有, 向cookie中保存userid, 返回一个成功的响应
-      res.cookie('userid', userDoc._id)
+      res.cookie('userid', userDoc._id, {maxAge: 1000*60*60*24*7}) //指定maxAge持久化cookie
       res.send({
         code: 0,
         data: userDoc
@@ -124,6 +124,29 @@ router.post('/update', function (req, res) {
     const data = Object.assign(req.body, {_id, username, type})
     // assign(obj1, obj2, obj3,...) // 将多个指定的对象进行合并, 返回一个合并后的对象
     res.send({code: 0, data})
+  })
+})
+
+
+// 根据cookie获取对应的user
+router.get('/user', function (req, res) {
+  // 取出cookie中的userid
+  const userid = req.cookies.userid
+  if(!userid) {
+    return res.send({code: 1, msg: '请先登陆'})
+  }
+
+  // 查询对应的user
+  UserModel.findOne({_id: userid}, filter, function (err, user) {
+    if(!user) { // cookie中的userid是错误数据
+      // 删除浏览器端cookie
+      res.clearCookie('userid')
+
+      return res.send({code: 1, msg: '请先登陆'})
+    } else {
+      return res.send({code: 0, data: user})
+    }
+
   })
 })
 
